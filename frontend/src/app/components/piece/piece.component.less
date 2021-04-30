@@ -1,0 +1,30 @@
+.piece {
+    display: block;
+    width: 40px;
+    height: 40px;
+    border-radius: 40px;
+    border-style: solid;
+    border-color: grey;
+
+    &.white{
+        background-color: beige;
+    }
+    &.black{
+        background-color: black;
+    }
+    &.no-color{
+        opacity: 0.2;
+        &:hover{
+            opacity: 1;
+        }
+    }
+
+    &.selected{
+        border-color: green;
+        &.no-color{
+            background-color: lightgreen;
+        }
+        border-width: 2px;
+        opacity: 1;
+    }
+  }

@@ -1,0 +1,11 @@
+<div *ngIf="!this.isTurn">
+    It is not your turn - waiting for oponents move
+</div>
+<div *ngIf="waitingForSecondPlayer">Waiting for second player</div>
+<div class="board" *ngIf="!waitingForSecondPlayer">
+    <canvas id="boardBackground" [appBoardBackground]="coordinates"  height="646px" width="6460px"></canvas>
+    <app-piece *ngFor="let color of (_blockchainService.positions$ | async), index as i" 
+    [color]="color" [selected]="i === fromIndexIndex || i === toIndex" (click)="pieceClicked(i)" 
+    [ngStyle]="coordinates[i]">
+    </app-piece>
+</div>

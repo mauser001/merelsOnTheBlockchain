@@ -1,0 +1,16 @@
+<div>State: {{_blockchainService.state$ | async}}</div>
+<input type="button" value="connect" (click)="connect()" *ngIf="(_blockchainService.state$ | async) !== _BLOCK_STATE.CONTRACT_CONNECTED"> 
+Your public address: {{_blockchainService.account$ | async}}
+<div *ngIf="(_blockchainService.state$ | async) === _BLOCK_STATE.CONTRACT_CONNECTED">
+    Playing games: {{_blockchainService.gameCount$ | async}}
+    <div *ngIf="!(_blockchainService.myGame$ | async)">
+        <input type="button" value="open a new game" (click)="openGame()"> 
+        <div *ngFor="let openGame of (_blockchainService.games$ | async | openGames)">
+            <input type="button" value="Join" (click)="joinGame(openGame)"> {{openGame.white}}
+        </div>
+    </div>
+    <div *ngIf="(_blockchainService.myGame$ | async) as game">
+        my color: {{game.white === (_blockchainService.account$ | async) ? 'White' : 'Black'}}
+        <app-table></app-table>
+    </div>
+</div>
