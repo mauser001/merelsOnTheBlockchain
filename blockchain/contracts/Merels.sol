@@ -3,7 +3,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 contract Merels {
     uint256 constant GAME_COST = 10000000 gwei;
-    uint256 constant MIN_FINSIHED_GAMES_BFORE_LOTTERY = 2;
+    uint256 constant MIN_FINSIHED_GAMES_BFORE_LOTTERY = 5;
     enum COLORS {UNDEFINED, WHITE, BLACK}
 
     address private owner;
@@ -56,6 +56,9 @@ contract Merels {
 
     //Event WON
     event WonGame(address indexed _sender);
+
+    //Event WON
+    event LuckyPlayer(address indexed _sender);
 
     /**
      * @dev Set contract deployer as owner
@@ -150,36 +153,58 @@ contract Merels {
         bool ownerHasMill = checkMill(toPos, ownColor, game);
 
         bool won = false;
+        COLORS oponentColor = ownColor == COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
         if (ownerHasMill) {
-            COLORS oponentColor =
-                ownColor == COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
-            require(
-                removePos >= 0 &&
-                    removePos < 24 &&
-                    positions[game.index][removePos] == oponentColor &&
-                    !checkMill(removePos, oponentColor, game),
-                "Remove not possible"
-            );
-
-            positions[game.index][removePos] = COLORS.UNDEFINED;
-            if (game.round >= 18) {
-                uint256 countOponent = countColor(game.index, oponentColor);
-                if (countOponent < 3) {
-                    // WON! so we pay out
-                    address payable winner = payable(msg.sender);
-                    winner.transfer(GAME_COST + GAME_COST / 2);
-                    finishedGames++;
-                    finishedGamesSinceLastPayout++;
-                    gamesWonByAddress[msg.sender]++;
-                    cleanUpFinishedGame(game);
-                    won = true;
-                }
+            if(!oponentHasOnlyMills(oponentColor, game))
+            {
+                require(
+                    removePos >= 0 &&
+                        removePos < 24 &&
+                        positions[game.index][removePos] == oponentColor &&
+                        !checkMill(removePos, oponentColor, game),
+                    "Remove not possible"
+                );
+                positions[game.index][removePos] = COLORS.UNDEFINED;
             }
         } else {
             require(removePos < 0, "remove not allowed");
         }
-
+        
+        roundsPlayedByAddress[msg.sender]++;
         game.round++;
+        if (game.round >= 18) {
+            uint256 countOponent = countColor(game.index, oponentColor);
+            if (countOponent < 3 || oponentCannotMove(oponentColor, game)) {
+                // WON! so we pay out
+                address payable winner = payable(msg.sender);
+                winner.transfer(GAME_COST + GAME_COST / 4 * 3);
+                finishedGames++;
+                finishedGamesSinceLastPayout++;
+                gamesWonByAddress[msg.sender]++;
+                cleanUpFinishedGame(game);
+                won = true;
+                if(finishedGamesSinceLastPayout == MIN_FINSIHED_GAMES_BFORE_LOTTERY)
+                {
+                    address mostPlayed = address(0);
+                    uint256 maxRounds = 0;
+                    for(uint256 i = 0; i < allPlayers.length; i++)
+                    {
+                        if(maxRounds < roundsPlayedByAddress[allPlayers[i]])
+                        {
+                            mostPlayed = allPlayers[i];
+                            maxRounds = roundsPlayedByAddress[allPlayers[i]];
+                        }
+                        
+                    }
+                    address payable lucky = payable(mostPlayed);
+                    lucky.transfer(GAME_COST / 4 * MIN_FINSIHED_GAMES_BFORE_LOTTERY);
+                    roundsPlayedByAddress[mostPlayed] = 0;
+                    finishedGamesSinceLastPayout = 0;
+                    emit LuckyPlayer(mostPlayed);
+                }
+            }
+        }
+
         emit MadeMove(msg.sender, toPos, fromPos, removePos);
         if (won) {
             emit WonGame(msg.sender);
@@ -217,6 +242,52 @@ contract Merels {
 
         gameNumberByAddress[last.white] = last.index + 1;
         gameNumberByAddress[last.black] = last.index + 1;
+    }
+
+    function oponentCannotMove(COLORS color,
+        Game storage game) private view returns (bool) {
+        bool isTrue = true;
+        int256 posInCircle = 0;
+        int256 circle = 0;
+        for (int256 i = 0; i < 24; i++) {
+            posInCircle = i % 8;
+            circle = i / 8;
+            if (positions[game.index][i] == color) {
+                if(posInCircle == 0)
+                {
+                    isTrue = !(positions[game.index][i+1] == COLORS.UNDEFINED || positions[game.index][i+7] == COLORS.UNDEFINED);
+                }
+                else if(posInCircle == 7 && (positions[game.index][i+1] == COLORS.UNDEFINED || positions[game.index][i-7] == COLORS.UNDEFINED))
+                {
+                    isTrue = false;
+                }
+                else if(posInCircle < 7 && (positions[game.index][i+1] == COLORS.UNDEFINED || positions[game.index][i-1] == COLORS.UNDEFINED))
+                {
+                    isTrue = false;
+                }
+                else if(posInCircle % 2 == 1 && ((circle < 2 && positions[game.index][i+8] == COLORS.UNDEFINED) || (circle > 0 && positions[game.index][i-8] == COLORS.UNDEFINED)))
+                {                    
+                    isTrue = false;
+                }
+                if(!isTrue)
+                {
+                    break;
+                }
+            }
+        }
+        return isTrue;
+    }
+
+    function oponentHasOnlyMills(COLORS color,
+        Game storage game) private view returns (bool) {
+        bool isTrue = true;
+        for (int256 i = 0; i < 24; i++) {
+            if (positions[game.index][i] == color && !checkMill(i, color, game)) {
+                isTrue = false;
+                break;
+            }
+        }
+        return isTrue;
     }
 
     function checkMill(

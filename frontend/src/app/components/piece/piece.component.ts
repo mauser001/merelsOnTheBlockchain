@@ -11,6 +11,7 @@ export class PieceComponent implements OnInit {
   @Input() color: COLOR = COLOR.UNDEFINED;
   @Input() selected: boolean = false;
   @Input() selectable: boolean = false;
+  @Input() removing: boolean = false;
   _COLOR: typeof COLOR = COLOR;
 
   constructor() { }

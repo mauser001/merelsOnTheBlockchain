@@ -1,16 +1,18 @@
 import { Component, OnInit } from '@angular/core';
-import { BigNumber } from '@ethersproject/bignumber';
 import { BlockchainService, BLOCK_STATE } from './services/blockchain.service';
-import { filter, switchMap, tap } from 'rxjs/operators';
 import { IGame } from './models/interfaces/igame';
+import { COLOR } from './enums/color.enum';
+import { version } from '../../package.json';
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.less']
 })
 export class AppComponent implements OnInit {
-  title = 'frontend';
   _BLOCK_STATE: typeof BLOCK_STATE = BLOCK_STATE;
+  _COLOR: typeof COLOR = COLOR;
+  _version: string = version;
 
   constructor(public _blockchainService: BlockchainService) {}
 

@@ -2,11 +2,10 @@ import { ApplicationRef, Injectable } from '@angular/core';
 import { BehaviorSubject, Subject, throwError } from 'rxjs';
 import { BigNumber, ethers, providers } from "ethers";
 import * as Merels from '../../assets/contract/Merels.json';
-import { Game } from '../models/game';
 import { COLOR } from '../enums/color.enum';
 import { INetwork } from '../models/interfaces/inetwork';
 import { IGame } from '../models/interfaces/igame';
-import { ProviderMessage } from '../models/interfaces/provider-message';
+import { Connection } from '../models/interfaces/connection';
 
 declare global {
   interface Window { ethereum: any; web3: any }
@@ -27,13 +26,21 @@ export enum BLOCK_STATE {
 })
 export class BlockchainService {
 
-
-  private CONTRACT_ADRESS: string = "0x161aA31f3DC0f71A6AFf9C45be2A5A94151D5193";
-  private CHAIN_ID: number = 80001;
+  readonly connection:Connection = {    
+    contractAddress: "0xafFD6827c32425DB36Ce9879bB3ED28E9f3ea142",
+    chainId: 80001,
+    chainRpc: "https://rpc-mumbai.maticvigil.com/",
+    chainName: "Matic Mumbai Testnet",
+    currencySymbol: "Matic",
+    blockExplorerUrl: "https://mumbai-explorer.matic.today",
+    costInEth: "0.01"
+  }
   private provider: any;
   private signer: any;
   private contract: any;
   private eventHandlersAdded: boolean = false;
+  
+  private makeMoveListener: Subject<any> = new Subject<any>();
 
   state$: BehaviorSubject<BLOCK_STATE> = new BehaviorSubject<BLOCK_STATE>(BLOCK_STATE.DEFAULT);
   account$: BehaviorSubject<string> = new BehaviorSubject<string>("");
@@ -41,6 +48,8 @@ export class BlockchainService {
   positions$: BehaviorSubject<COLOR[]> = new BehaviorSubject<COLOR[]>([]);
   gameCount$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
   games$: BehaviorSubject<IGame[]> = new BehaviorSubject<IGame[]>([]);
+  winnerList$: BehaviorSubject<string[]> = new BehaviorSubject<string[]>([]);
+  luckyPlayer$: BehaviorSubject<string> = new BehaviorSubject<string>("");
   ownColor: COLOR = COLOR.UNDEFINED;
 
   constructor(public _ref: ApplicationRef) {
@@ -75,7 +84,14 @@ export class BlockchainService {
       window.ethereum.on('accountsChanged', (accounts: any[]) => {
         console.log("accountsChanged: " + accounts[0]);
         this.cleanUp();
-        this.checkSigner();
+        if (!accounts.length) {
+          this.state$.next(BLOCK_STATE.NO_METAMASK);        
+          this._ref.tick();
+        }
+        else
+        {
+          this.checkSigner();
+        }
       });
 
       window.ethereum.on('networkChanged', (networkId: string) => {
@@ -91,7 +107,6 @@ export class BlockchainService {
       window.ethereum.on('disconnect', () => {
         console.log("network disconnect");
         this.cleanUp();
-        this.state$.next(BLOCK_STATE.NO_METAMASK);
       });
     }
   }
@@ -106,7 +121,7 @@ export class BlockchainService {
 
   private checkNetwork() {
     this.provider.getNetwork().then((network: INetwork) => {
-      if (network.chainId === this.CHAIN_ID) {
+      if (network.chainId === this.connection.chainId) {
         this.checkSigner();
       }
       else {
@@ -129,7 +144,7 @@ export class BlockchainService {
               this.account$.next(account);
             }
             if (account) {
-              this.contract = new ethers.Contract(this.CONTRACT_ADRESS, Merels.abi, this.provider);
+              this.contract = new ethers.Contract(this.connection.contractAddress, Merels.abi, this.provider);
               this.contract.on("GameStarted", (author: any, event: any) => {
                 console.log("GameStarted event received");
                 if (event.args[0] === this.account$) {
@@ -141,6 +156,16 @@ export class BlockchainService {
                 if (event.args[1] === this.account$ || event.args[0] === this.account$) {
                   this.updateGameInformations();
                 }
+              });
+              
+              this.contract.on("LuckyPlayer", (author: any, event: any) => {
+                console.log("LuckyPlayer event received -> "+event.args[0]);
+                this.luckyPlayer$.next(event.args[0]);
+              });
+                            
+              this.contract.on("WonGame", (author: any, event: any) => {
+                console.log("WonGame event received -> "+event.args[0]);
+                this.winnerList$.next(this.winnerList$.getValue().concat(event.args[0]));
               });
 
               this.contract.on("MadeMove", (author: any, event: any) => {
@@ -237,7 +262,7 @@ export class BlockchainService {
 
   async openGame() {
     let overrides: any = {
-      value: ethers.utils.parseEther("0.01"),
+      value: ethers.utils.parseEther(this.connection.costInEth),
       from: this.account$.value
     };
     let gas: BigNumber = await this.contract.estimateGas.startGame(overrides);
@@ -248,7 +273,7 @@ export class BlockchainService {
 
   async joinGame(game: IGame) {
     let overrides: any = {
-      value: ethers.utils.parseEther("0.01"),
+      value: ethers.utils.parseEther(this.connection.costInEth),
       from: this.account$.value
     };
     let gas: BigNumber = await this.contract.estimateGas.joinGame(game.white, overrides);
@@ -257,7 +282,6 @@ export class BlockchainService {
     await this.signer.sendTransaction(transaction);
   }
 
-  private makeMoveListener: Subject<any> = new Subject<any>();
   makeMove(to: number, from: number = -1, remove: number = -1): Subject<any> {
     this.makeMoveListener = new Subject<any>();
     let overrides: any = {

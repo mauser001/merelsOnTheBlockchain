@@ -7,6 +7,8 @@ import { TableComponent } from './components/table/table.component';
 import { OpenGamesPipe } from './pipes/open-games.pipe';
 import { PieceComponent } from './components/piece/piece.component';
 import { BoardBackgroundDirective } from './directives/board-background.directive';
+import { InstallationTutorialComponent } from './components/installation-tutorial/installation-tutorial.component';
+import { GameRulesComponent } from './components/game-rules/game-rules.component';
 
 @NgModule({
   declarations: [
@@ -14,7 +16,9 @@ import { BoardBackgroundDirective } from './directives/board-background.directiv
     TableComponent,
     OpenGamesPipe,
     PieceComponent,
-    BoardBackgroundDirective
+    BoardBackgroundDirective,
+    InstallationTutorialComponent,
+    GameRulesComponent
   ],
   imports: [
     BrowserModule,

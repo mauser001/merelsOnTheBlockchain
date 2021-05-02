@@ -1,0 +1,16 @@
+.header{
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    cursor: pointer;
+    &:hover{
+        background-color: rgba(0,0,0,0.1);
+    }
+    div{
+        display: inline-block;
+        transform: rotate(-90deg);
+        &.isOpen{
+            transform: rotate(90deg);
+        }
+    }
+}

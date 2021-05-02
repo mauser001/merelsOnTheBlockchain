@@ -1,0 +1,15 @@
+<h2 (click)="isOpen=!isOpen" class="header"><div [ngClass]="{'isOpen':isOpen}">></div> Game rules <div [ngClass]="{'isOpen':isOpen}"> ></div></h2>
+<div *ngIf="isOpen">
+    <p class="disclaimer">Disclaimer: Your public key will be stored permanantly in the games contract on the blockchain. You will not be able to delete this reference.
+    No other personal information will be stored or accessed by this website.</p>
+    <ul>
+        <li>Starting or joining a game costs {{_blockchainService.connection.costInEth}} {{_blockchainService.connection.currencySymbol}}.</li>
+        <li>Every move will be stored and validated on the Blockchain and there will be transaction costs.</li>
+        <li>The winner of a game gets 7/4 of the game cost. 1/4 will be but in the lucky pot.</li>
+        <li>After evere 5 finished games, the player who made the most moves gets the remaining 5/4 of the game costs as a lucky bonus.</li>
+        <li>At the moment it is not possible to cancel a game. Each game must end with a winner.</li>
+        <li>Nobody has access to the funds locked in the smart contract - all logic is decentralized!</li>
+        <li>This is an early alpha version an will for sure have bugs!</li>
+        <li>Smart contract address: {{_blockchainService.connection.contractAddress}}</li>
+    </ul>
+</div>

@@ -11,7 +11,6 @@ export class BoardBackgroundDirective {
 
      @Input() set appBoardBackground(coordinates: Coord[]) {
       if (coordinates) {
-        console.log(this.el);        
         let ctx:any = this.el.nativeElement.getContext("2d");
         ctx.strokeStyle = "#000000"; // color of grid lines
         ctx.beginPath();

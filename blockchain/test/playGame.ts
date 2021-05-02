@@ -70,7 +70,6 @@ contract("Play games", async accounts => {
     
     count = await merels.gameCount();
     assert.equal(count,0, "Games cleaned");
-
   });
 
   it("Start 3 games", async () => {

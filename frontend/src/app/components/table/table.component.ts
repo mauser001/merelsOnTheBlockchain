@@ -1,5 +1,4 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { switchMap } from 'rxjs/operators';
 import { COLOR } from 'src/app/enums/color.enum';
 import { Coord } from 'src/app/models/coord';
 import { Game } from 'src/app/models/game';
@@ -16,6 +15,7 @@ export class TableComponent implements OnInit {
   positions: COLOR[] = [];
   _COLOR: typeof COLOR = COLOR;
   fromIndexIndex: number = -1;
+  removeIndex: number = -1;
   toIndex: number = -1;
   waiting: boolean = false;
   isTurn: boolean = false;
@@ -59,21 +59,27 @@ export class TableComponent implements OnInit {
     }
     if (this.fromIndexIndex === index) {
       this.fromIndexIndex = -1;
+      this.toIndex = -1;
+      this.removeIndex = -1;
       return;
     }
     if (this.toIndex === index) {
-      this.toIndex = -1;
       this.fromIndexIndex = -1;
+      this.removeIndex = -1;
       return;
     }
-    let remove: number = -1;
+    if(this.removeIndex  === index)
+    {
+      this.removeIndex = -1;
+    }
+    this.removeIndex = -1;
     let makeMove: boolean = false;
     let oponentColor = this._blockchainService.ownColor === COLOR.WHITE ? COLOR.BLACK : COLOR.WHITE;
     if (this.positions[index] === oponentColor) {
-      if (this.toIndex > 0 && (this.game.round.toNumber() < 18 || this.fromIndexIndex > 0)
+      if (this.toIndex >= 0 && (this.game.round.toNumber() < 18 || this.fromIndexIndex >= 0)
         && this.positions[index] === oponentColor && !GameHelper.makesMill(index, this.positions, oponentColor)) {
         makeMove = true;
-        remove = index;
+        this.removeIndex  = index;
       }
     }
     else if (this.game.round.toNumber() < 18) {
@@ -103,7 +109,7 @@ export class TableComponent implements OnInit {
 
     if (makeMove) {
       this.waiting = true;
-      this._blockchainService.makeMove(this.toIndex, this.fromIndexIndex, remove).subscribe(() => this.waiting = false);
+      this._blockchainService.makeMove(this.toIndex, this.fromIndexIndex, this.removeIndex).subscribe(() => this.waiting = false);
     }
   }
 
