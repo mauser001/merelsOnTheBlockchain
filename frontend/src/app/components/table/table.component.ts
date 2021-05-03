@@ -49,8 +49,11 @@ export class TableComponent implements OnInit {
     this.fromIndexIndex = -1;
     this.toIndex = -1;
     this.game = this._blockchainService.myGame$.value as IGame;
-    this.isTurn = (this._blockchainService.ownColor == COLOR.WHITE) == (this.game.round.toNumber() % 2 == 0)
-    this.waitingForSecondPlayer = GameHelper.isEmptyAdress(this.game.black);
+    if( this.game)
+    {
+      this.isTurn = (this._blockchainService.ownColor == COLOR.WHITE) == (this.game.round.toNumber() % 2 == 0)
+      this.waitingForSecondPlayer = GameHelper.isEmptyAdress(this.game.black);
+    }
   }
 
   pieceClicked(index: number) {

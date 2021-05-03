@@ -15,6 +15,7 @@ export enum BLOCK_STATE {
   DEFAULT = "default",
   INIT = "init",
   ERROR = "error",
+  WAITING_FOR_METAMASK = "waiting for metamask",
   NO_METAMASK = "no metamask",
   WRONG_NETWORK = "wrong network",
   NO_CONTRACT = "no contract",
@@ -26,8 +27,8 @@ export enum BLOCK_STATE {
 })
 export class BlockchainService {
 
-  readonly connection:Connection = {    
-    contractAddress: "0xafFD6827c32425DB36Ce9879bB3ED28E9f3ea142",
+  readonly connection: Connection = {
+    contractAddress: "0xA32184068c12a6476e8E1f3f3f86D6e563390453",
     chainId: 80001,
     chainRpc: "https://rpc-mumbai.maticvigil.com/",
     chainName: "Matic Mumbai Testnet",
@@ -39,8 +40,9 @@ export class BlockchainService {
   private signer: any;
   private contract: any;
   private eventHandlersAdded: boolean = false;
-  
+
   private makeMoveListener: Subject<any> = new Subject<any>();
+  private initTimeout: any;
 
   state$: BehaviorSubject<BLOCK_STATE> = new BehaviorSubject<BLOCK_STATE>(BLOCK_STATE.DEFAULT);
   account$: BehaviorSubject<string> = new BehaviorSubject<string>("");
@@ -59,13 +61,19 @@ export class BlockchainService {
     this.state$.next(BLOCK_STATE.INIT);
     if (window.ethereum) {
       try {
+        this.initTimeout = setTimeout(() => {
+          this.initTimeout = undefined;
+          this.state$.next(BLOCK_STATE.WAITING_FOR_METAMASK);
+        }, 1000);
         window.ethereum.send('eth_requestAccounts').then(() => {
+          this.clearInitTimeout();
           this.provider = new ethers.providers.Web3Provider(window.ethereum);
           this.setupEventHandler();
           this.checkNetwork();
         },
           (error: any) => {
             console.log("error connecting to metamask: " + error);
+            this.clearInitTimeout();
             this.state$.next(BLOCK_STATE.NO_METAMASK);
           });
       }
@@ -79,17 +87,23 @@ export class BlockchainService {
 
   }
 
+  private clearInitTimeout() {
+    if (this.initTimeout) {
+      clearTimeout(this.initTimeout);
+      this.initTimeout = undefined;
+    }
+  }
+
   private setupEventHandler() {
     if (!this.eventHandlersAdded) {
       window.ethereum.on('accountsChanged', (accounts: any[]) => {
         console.log("accountsChanged: " + accounts[0]);
         this.cleanUp();
         if (!accounts.length) {
-          this.state$.next(BLOCK_STATE.NO_METAMASK);        
+          this.state$.next(BLOCK_STATE.NO_METAMASK);
           this._ref.tick();
         }
-        else
-        {
+        else {
           this.checkSigner();
         }
       });
@@ -140,40 +154,39 @@ export class BlockchainService {
       if (this.signer) {
         this.signer.getAddress().then((account: any) => {
           if (account) {
-            if (this.account$.getValue() !== account) {
+            if (this.account$.value !== account) {
               this.account$.next(account);
             }
-            if (account) {
+            if (!this.contract) {
               this.contract = new ethers.Contract(this.connection.contractAddress, Merels.abi, this.provider);
-              this.contract.on("GameStarted", (author: any, event: any) => {
+              this.contract.on("GameStarted", (author: any) => {
                 console.log("GameStarted event received");
-                if (event.args[0] === this.account$) {
+                if (author === this.account$.value) {
                   this.updateGameInformations();
                 }
               });
-              this.contract.on("GameJoined", (author: any, event: any) => {
+              this.contract.on("GameJoined", (author: any, white: any) => {
                 console.log("GameJoined event received");
-                if (event.args[1] === this.account$ || event.args[0] === this.account$) {
+                if (author === this.account$.value || white === this.account$.value) {
                   this.updateGameInformations();
                 }
               });
-              
+
               this.contract.on("LuckyPlayer", (author: any, event: any) => {
-                console.log("LuckyPlayer event received -> "+event.args[0]);
+                console.log("LuckyPlayer event received -> " + event.args[0]);
                 this.luckyPlayer$.next(event.args[0]);
               });
-                            
+
               this.contract.on("WonGame", (author: any, event: any) => {
-                console.log("WonGame event received -> "+event.args[0]);
+                console.log("WonGame event received -> " + event.args[0]);
                 this.winnerList$.next(this.winnerList$.getValue().concat(event.args[0]));
               });
 
               this.contract.on("MadeMove", (author: any, event: any) => {
                 console.log("MadeMove event received");
                 if (author === (this.myGame$.value as IGame).white || author === (this.myGame$.value as IGame).black) {
-                  setTimeout(()=>{
-                    if(!this.makeMoveListener.closed)
-                    {
+                  setTimeout(() => {
+                    if (!this.makeMoveListener.closed) {
                       this.makeMoveListener.next(true);
                       this.makeMoveListener.complete();
                     }
@@ -181,20 +194,17 @@ export class BlockchainService {
                   }, author === this.ownColor ? 1000 : 0)
                 }
               });
-
-              //makeMoveListener
-
-              if (this.contract) {
-                this.state$.next(BLOCK_STATE.CONTRACT_CONNECTED);
-                this.updateGameInformations();
-              }
-              else {
-                this.state$.next(BLOCK_STATE.NO_METAMASK);
-              }
+            }
+            if (this.contract) {
+              this.state$.next(BLOCK_STATE.CONTRACT_CONNECTED);
+              this.updateGameInformations();
             }
             else {
               this.state$.next(BLOCK_STATE.NO_METAMASK);
             }
+          }
+          else {
+            this.state$.next(BLOCK_STATE.NO_METAMASK);
           }
         },
           (error: any) => {
@@ -226,7 +236,7 @@ export class BlockchainService {
           Promise.all(promises).then(games => {
             this.games$.next(games);
             this.myGame$.next(games.find(game => {
-              return game.white === this.account$.getValue() || game.black === this.account$.getValue();
+              return game.white === this.account$.value || game.black === this.account$.value;
             }));
             if (this.myGame$.getValue()) {
               this.ownColor = this.myGame$.value?.white === this.account$.value ? COLOR.WHITE : COLOR.BLACK;
@@ -274,7 +284,8 @@ export class BlockchainService {
   async joinGame(game: IGame) {
     let overrides: any = {
       value: ethers.utils.parseEther(this.connection.costInEth),
-      from: this.account$.value
+      from: this.account$.value,
+      gasLimit: "10000000"
     };
     let gas: BigNumber = await this.contract.estimateGas.joinGame(game.white, overrides);
     overrides.gasLimit = gas;

@@ -86,6 +86,8 @@ contract Merels {
         require(gameNumberByAddress[oponent] > 0, "Oponent has no open game");
         require(msg.value == GAME_COST, "Game cost not met");
         uint256 index = gameNumberByAddress[oponent] - 1;
+        require(games.length > index, "Game not found");
+        require(games[index].white == oponent, "Game data currupt");
         require(games[index].black == address(0), "Game already in progres");
         games[index].black = msg.sender;
         gameNumberByAddress[msg.sender] = gameNumberByAddress[oponent];
@@ -230,18 +232,30 @@ contract Merels {
         gameNumberByAddress[game.white] = 0;
         gameNumberByAddress[game.black] = 0;
         Game storage last = games[lastIndex];
-        last.index = gameIndex;
-        delete games[gameIndex];
-        games[gameIndex] = last;
-        games.pop();
 
         for (int256 i = 0; i < 24; i++) {
-            positions[gameIndex][i] = positions[lastIndex][i];
+            if(games.length > 0 )
+            {
+                positions[gameIndex][i] = positions[lastIndex][i];
+            }
             positions[lastIndex][i] = COLORS.UNDEFINED;
         }
 
-        gameNumberByAddress[last.white] = last.index + 1;
-        gameNumberByAddress[last.black] = last.index + 1;
+        if(games.length > 0 )
+        {
+            last.index = gameIndex;
+            games[gameIndex].white = last.white;
+            games[gameIndex].black = last.black;
+            games[gameIndex].round = last.round;       
+            gameNumberByAddress[last.white] = gameIndex + 1;
+            if(last.black != address(0))
+            {
+                gameNumberByAddress[last.black] = gameIndex + 1;
+            }
+        }
+
+        games.pop();
+        activeGames--;
     }
 
     function oponentCannotMove(COLORS color,

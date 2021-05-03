@@ -11,14 +11,14 @@
 <div>State: {{_blockchainService.state$ | async}}</div>
 <input type="button" value="Connect" (click)="connect()" *ngIf="(_blockchainService.state$ | async) !== _BLOCK_STATE.CONTRACT_CONNECTED"> 
 Your public address: {{_blockchainService.account$ | async}}
-<app-installation-tutorial *ngIf="(_blockchainService.state$ | async) !== _BLOCK_STATE.CONTRACT_CONNECTED">
+<app-installation-tutorial *ngIf="(_blockchainService.state$ | async) !== _BLOCK_STATE.CONTRACT_CONNECTED && (_blockchainService.state$ | async) !== _BLOCK_STATE.INIT">
 </app-installation-tutorial>
 <div *ngIf="(_blockchainService.state$ | async) === _BLOCK_STATE.CONTRACT_CONNECTED">
-    Playing games: {{_blockchainService.gameCount$ | async}}
+    Currently playing games: {{_blockchainService.gameCount$ | async}}
     <div *ngIf="!(_blockchainService.myGame$ | async)">
-        <input type="button" value="Open a new game" (click)="openGame()"> 
+        <input type="button" value="Open a new game" (click)="openGame()" [disabled]="loading"> 
         <div *ngFor="let openGame of (_blockchainService.games$ | async | openGames)">
-            <input type="button" value="Join " (click)="joinGame(openGame)"> {{openGame.white}}
+            <input type="button" value="Join " (click)="joinGame(openGame)" [disabled]="loading"> {{openGame.white}}
         </div>
     </div>
     <div *ngIf="(_blockchainService.myGame$ | async) as game">
