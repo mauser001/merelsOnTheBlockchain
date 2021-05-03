@@ -1,5 +1,4 @@
-<h2 (click)="isOpen=!isOpen" class="header"><div [ngClass]="{'isOpen':isOpen}">></div> Game rules <div [ngClass]="{'isOpen':isOpen}"> ></div></h2>
-<div *ngIf="isOpen">
+<div *ngIf="isOpen" class="text-container">
     <p class="disclaimer">Disclaimer: Your public key will be stored permanantly in the games contract on the blockchain. You will not be able to delete this reference.
     No other personal information will be stored or accessed by this website.</p>
     <ul>
@@ -13,3 +12,5 @@
         <li>Smart contract address: {{_blockchainService.connection.contractAddress}}</li>
     </ul>
 </div>
+<h2 (click)="isOpen=!isOpen" class="header"><div [ngClass]="{'isOpen':isOpen}">></div> Game rules <div [ngClass]="{'isOpen':isOpen}"> ></div></h2>
+

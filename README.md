@@ -4,7 +4,7 @@ Merels is a board game, also known as "Mühle" or "Nine Man Morris".
 
 License: MIT
 
-![Screenshot](merels.png)
+![Screenshot](frontend/src/assets/images/merels.png)
 
 The purpos of this project was to learn solidity and interact with the blockchain (via Metamask).
 

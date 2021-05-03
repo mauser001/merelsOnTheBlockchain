@@ -1,16 +1,36 @@
-.header{
-    display: flex;
-    flex-direction: row;
-    justify-content: left;
-    cursor: pointer;
-    &:hover{
-        background-color: rgba(0,0,0,0.1);
+:host{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;   
+    background-color: rgba(0,0,0,0.1);
+    box-shadow: -1px -3px 10px rgb(200 200 200);
+
+    .text-container{        
+        padding-left: 10px;
+        padding-right: 10px;
     }
-    div{
-        display: inline-block;
-        transform: rotate(-90deg);
-        &.isOpen{
-            transform: rotate(90deg);
+
+    .header{
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        cursor: pointer;
+        background-color: rgba(0,0,0,0.1);
+        margin-block-end: unset;
+        margin-block-start: unset;    
+        padding: 10px;
+        &:hover{
+            background-color: rgba(0,0,0,0.2);
+        }
+        div{
+            display: inline-block;
+            transform: rotate(-90deg);    
+            margin-left: 10px;
+            margin-right: 10px;
+            &.isOpen{
+                transform: rotate(90deg);
+            }
         }
     }
 }

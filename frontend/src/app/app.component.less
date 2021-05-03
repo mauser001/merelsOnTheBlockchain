@@ -1,7 +1,39 @@
 h1{
+    box-shadow: 1px 3px 3px rgb(200 200 200);
+    position: relative;
+    padding-bottom: 6px;
+    padding-left: 10px;
+    margin-block-start: 0;
+    img{
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+        object-position: bottom;
+        margin-right: 20px;
+    }
     sup{
         font-size: 16px;
         font-style: italic;
+    }
+
+    .link-icon {
+        float: right;
+        opacity: 1;
+        opacity: 0.5;    
+        padding-right: 10px;
+        padding-top: 10px;
+    }
+
+    .link-icon:hover {
+        opacity: 1;
+    }
+
+    #twitter-icon {
+        color: #1da1f2;
+        fill: currentColor;
+        opacity: 0.5;
+        width: 30px;
+        height: 30px;
     }
 }
 
@@ -15,32 +47,3 @@ h1{
 
     }
 }
-
-.github-link{
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    opacity: 0.5;
-}
-
-.github-link:hover{
-    opacity: 1;
-}
-
-.twitter-link{    
-    position: absolute;
-    top: 40px;
-    right: 10px;
-}
-
-#twitter-icon {
-    color: #1da1f2;
-    fill: currentColor;
-    opacity: 0.5;
-    width: 30px;
-    height: 30px;
-  }
-  
-  #twitter-icon:hover {
-    opacity: 1;
-  }

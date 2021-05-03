@@ -7,7 +7,7 @@ import { BlockchainService } from 'src/app/services/blockchain.service';
   styleUrls: ['./game-rules.component.less']
 })
 export class GameRulesComponent implements OnInit {
-  isOpen:boolean = true;
+  isOpen:boolean = false;
   constructor(public _blockchainService:BlockchainService) { }
 
   ngOnInit(): void {

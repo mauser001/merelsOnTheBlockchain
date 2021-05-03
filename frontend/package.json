@@ -1,6 +1,6 @@
 {
   "name": "merels-on-the-block",
-  "version": "1.0.0-ALPHA.0001",
+  "version": "1.0.0-ALPHA.0002",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
