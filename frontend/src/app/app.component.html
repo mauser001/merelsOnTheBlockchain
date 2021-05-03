@@ -13,7 +13,7 @@
 Your public address: {{_blockchainService.account$ | async}}
 <app-installation-tutorial *ngIf="(_blockchainService.state$ | async) !== _BLOCK_STATE.CONTRACT_CONNECTED && (_blockchainService.state$ | async) !== _BLOCK_STATE.INIT">
 </app-installation-tutorial>
-<div *ngIf="(_blockchainService.state$ | async) === _BLOCK_STATE.CONTRACT_CONNECTED">
+<div *ngIf="(_blockchainService.state$ | async) === _BLOCK_STATE.CONTRACT_CONNECTED" class="game-container">
     Currently playing games: {{_blockchainService.gameCount$ | async}}
     <div *ngIf="!(_blockchainService.myGame$ | async)">
         <input type="button" value="Open a new game" (click)="openGame()" [disabled]="loading"> 
