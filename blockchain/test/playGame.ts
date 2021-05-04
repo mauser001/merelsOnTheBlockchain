@@ -1,7 +1,7 @@
-const Merels = artifacts.require("Merels");
-const gameCost = 10000000000000000;
-
-contract("Play games", async accounts => {
+contract("Play games", async accounts => {    
+  let Merels = require("./testBase.ts").Merels;
+  let GAME_COST = require("./testBase.ts").GAME_COST;
+  let tryCatch = require("./testBase.ts").tryCatch;
   let merels;
   beforeEach(function () {
     return Merels.new()
@@ -19,11 +19,11 @@ contract("Play games", async accounts => {
     console.log("startBalance: " + startBalance);
 
     assert.equal(count, 0, "Gamecount is 0");
-    await merels.startGame({ from: player1, value: gameCost });
+    await merels.startGame({ from: player1, value: GAME_COST });
     count = await merels.gameCount();
     assert.equal(count, 1, "Gamecount is 1 after game start");
 
-    await merels.joinGame(player1, { from: player2, value: gameCost });
+    await merels.joinGame(player1, { from: player2, value: GAME_COST });
 
     await merels.makeMove(0, -1, -1, { from: player1 });
 
@@ -84,12 +84,12 @@ contract("Play games", async accounts => {
     const player3 = accounts[3];
     let count = 0;
 
-    await merels.startGame({ from: player1, value: gameCost });
-    await merels.startGame({ from: player3, value: gameCost });
+    await merels.startGame({ from: player1, value: GAME_COST });
+    await merels.startGame({ from: player3, value: GAME_COST });
     count = await merels.gameCount();
     assert.equal(count, 2, "Gamecount is 2 after game start");
 
-    await merels.joinGame(player1, { from: player2, value: gameCost });
+    await merels.joinGame(player1, { from: player2, value: GAME_COST });
     await merels.makeMove(0, -1, -1, { from: player1 });
     await merels.makeMove(8, -1, -1, { from: player2 });
     await merels.makeMove(1, -1, -1, { from: player1 });
@@ -133,7 +133,7 @@ contract("Play games", async accounts => {
     count = await merels.gameCount();
     assert.equal(count, 1, "1 Game open");
 
-    await merels.joinGame(player3, { from: player1, value: gameCost });
+    await merels.joinGame(player3, { from: player1, value: GAME_COST });
 
     game0 = await merels.games(0);
     assert.equal(game0.black, player1, "Game 0 black must be player 1 after join");
@@ -150,9 +150,9 @@ contract("Play games", async accounts => {
     console.log("3 game count start: " + count);
     assert.equal(count, 0, "Gamecount is 0");
 
-    await merels.startGame({ from: player1, value: gameCost });
-    await merels.startGame({ from: player2, value: gameCost });
-    await merels.startGame({ from: player3, value: gameCost });
+    await merels.startGame({ from: player1, value: GAME_COST });
+    await merels.startGame({ from: player2, value: GAME_COST });
+    await merels.startGame({ from: player3, value: GAME_COST });
     count = await merels.gameCount();
     assert.equal(count, 3, "3 games created");
   });

@@ -1,3 +1,7 @@
+# 1.0.0-ALPHA.0005
+* (Frontend) Making the blockchain.service more immutable
+* (Blockchain) Started with "error" test cases
+
 # 1.0.0-ALPHA.0004
 * (Frontend) A little styling of the game rules
 
