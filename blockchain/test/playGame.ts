@@ -1,7 +1,5 @@
-contract("Play games", async accounts => {    
-  let Merels = require("./testBase.ts").Merels;
-  let GAME_COST = require("./testBase.ts").GAME_COST;
-  let tryCatch = require("./testBase.ts").tryCatch;
+contract("Play games", async accounts => {
+  const { Merels, GAME_COST, tryCatch } = require("./testBase.ts");
   let merels;
   beforeEach(function () {
     return Merels.new()
