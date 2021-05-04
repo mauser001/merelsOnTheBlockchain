@@ -1,5 +1,5 @@
 import { ApplicationRef, Injectable } from '@angular/core';
-import { BehaviorSubject, Subject, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, throwError } from 'rxjs';
 import { BigNumber, ethers, providers } from "ethers";
 import * as Merels from '../../assets/contract/Merels.json';
 import { COLOR } from '../enums/color.enum';
@@ -44,26 +44,26 @@ export class BlockchainService {
   private makeMoveListener: Subject<any> = new Subject<any>();
   private initTimeout: any;
 
-  state$: BehaviorSubject<BLOCK_STATE> = new BehaviorSubject<BLOCK_STATE>(BLOCK_STATE.DEFAULT);
-  account$: BehaviorSubject<string> = new BehaviorSubject<string>("");
-  myGame$: BehaviorSubject<IGame | undefined> = new BehaviorSubject<IGame | undefined>(undefined);
-  positions$: BehaviorSubject<COLOR[]> = new BehaviorSubject<COLOR[]>([]);
-  gameCount$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
-  games$: BehaviorSubject<IGame[]> = new BehaviorSubject<IGame[]>([]);
-  winnerList$: BehaviorSubject<string[]> = new BehaviorSubject<string[]>([]);
-  luckyPlayer$: BehaviorSubject<string> = new BehaviorSubject<string>("");
-  ownColor: COLOR = COLOR.UNDEFINED;
+  private _state$: BehaviorSubject<BLOCK_STATE> = new BehaviorSubject<BLOCK_STATE>(BLOCK_STATE.DEFAULT);
+  private _account$: BehaviorSubject<string> = new BehaviorSubject<string>("");
+  private _myGame$: BehaviorSubject<IGame | undefined> = new BehaviorSubject<IGame | undefined>(undefined);
+  private _positions$: BehaviorSubject<COLOR[]> = new BehaviorSubject<COLOR[]>([]);
+  private _gameCount$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
+  private _games$: BehaviorSubject<IGame[]> = new BehaviorSubject<IGame[]>([]);
+  private _winnerList$: BehaviorSubject<string[]> = new BehaviorSubject<string[]>([]);
+  private _luckyPlayer$: BehaviorSubject<string> = new BehaviorSubject<string>("");
+  private _ownColor: COLOR = COLOR.UNDEFINED;
 
   constructor(public _ref: ApplicationRef) {
   };
 
   connectAccount() {
-    this.state$.next(BLOCK_STATE.INIT);
+    this._state$.next(BLOCK_STATE.INIT);
     if (window.ethereum) {
       try {
         this.initTimeout = setTimeout(() => {
           this.initTimeout = undefined;
-          this.state$.next(BLOCK_STATE.WAITING_FOR_METAMASK);
+          this._state$.next(BLOCK_STATE.WAITING_FOR_METAMASK);
         }, 1000);
         window.ethereum.send('eth_requestAccounts').then(() => {
           this.clearInitTimeout();
@@ -74,15 +74,15 @@ export class BlockchainService {
           (error: any) => {
             console.log("error connecting to metamask: " + error);
             this.clearInitTimeout();
-            this.state$.next(BLOCK_STATE.NO_METAMASK);
+            this._state$.next(BLOCK_STATE.NO_METAMASK);
           });
       }
       catch (e) {
-        this.state$.next(BLOCK_STATE.ERROR);
+        this._state$.next(BLOCK_STATE.ERROR);
       }
     }
     else {
-      this.state$.next(BLOCK_STATE.NO_METAMASK);
+      this._state$.next(BLOCK_STATE.NO_METAMASK);
     }
 
   }
@@ -100,7 +100,7 @@ export class BlockchainService {
         console.log("accountsChanged: " + accounts[0]);
         this.cleanUp();
         if (!accounts.length) {
-          this.state$.next(BLOCK_STATE.NO_METAMASK);
+          this._state$.next(BLOCK_STATE.NO_METAMASK);
           this._ref.tick();
         }
         else {
@@ -126,11 +126,11 @@ export class BlockchainService {
   }
 
   private cleanUp() {
-    this.account$.next("");
-    this.myGame$.next(undefined);
-    this.positions$.next([]);
-    this.gameCount$.next(0);
-    this.games$.next([]);
+    this._account$.next("");
+    this._myGame$.next(undefined);
+    this._positions$.next([]);
+    this._gameCount$.next(0);
+    this._games$.next([]);
   }
 
   private checkNetwork() {
@@ -139,12 +139,12 @@ export class BlockchainService {
         this.checkSigner();
       }
       else {
-        this.state$.next(BLOCK_STATE.WRONG_NETWORK);
+        this._state$.next(BLOCK_STATE.WRONG_NETWORK);
       }
     },
       (error: any) => {
         console.log("error getting network from metamask: " + error);
-        this.state$.next(BLOCK_STATE.NO_METAMASK);
+        this._state$.next(BLOCK_STATE.NO_METAMASK);
       });
   }
 
@@ -154,72 +154,72 @@ export class BlockchainService {
       if (this.signer) {
         this.signer.getAddress().then((account: any) => {
           if (account) {
-            if (this.account$.value !== account) {
-              this.account$.next(account);
+            if (this._account$.value !== account) {
+              this._account$.next(account);
             }
             if (!this.contract) {
               this.contract = new ethers.Contract(this.connection.contractAddress, Merels.abi, this.provider);
               this.contract.on("GameStarted", (author: any) => {
                 console.log("GameStarted event received");
-                if (author === this.account$.value) {
+                if (author === this._account$.value) {
                   this.updateGameInformations();
                 }
               });
               this.contract.on("GameJoined", (author: any, white: any) => {
                 console.log("GameJoined event received");
-                if (author === this.account$.value || white === this.account$.value) {
+                if (author === this._account$.value || white === this._account$.value) {
                   this.updateGameInformations();
                 }
               });
 
               this.contract.on("LuckyPlayer", (author: any, event: any) => {
                 console.log("LuckyPlayer event received -> " + event.args[0]);
-                this.luckyPlayer$.next(event.args[0]);
+                this._luckyPlayer$.next(event.args[0]);
               });
 
               this.contract.on("WonGame", (author: any, event: any) => {
                 console.log("WonGame event received -> " + event.args[0]);
-                this.winnerList$.next(this.winnerList$.getValue().concat(event.args[0]));
+                this._winnerList$.next(this._winnerList$.getValue().concat(event.args[0]));
               });
 
               this.contract.on("MadeMove", (author: any, event: any) => {
                 console.log("MadeMove event received");
-                if (author === (this.myGame$.value as IGame).white || author === (this.myGame$.value as IGame).black) {
+                if (author === (this._myGame$.value as IGame).white || author === (this._myGame$.value as IGame).black) {
                   setTimeout(() => {
                     if (!this.makeMoveListener.closed) {
                       this.makeMoveListener.next(true);
                       this.makeMoveListener.complete();
                     }
                     this.updateGameInformations();
-                  }, author === this.ownColor ? 1000 : 0)
+                  }, author === this._ownColor ? 1000 : 0)
                 }
               });
             }
             if (this.contract) {
-              this.state$.next(BLOCK_STATE.CONTRACT_CONNECTED);
+              this._state$.next(BLOCK_STATE.CONTRACT_CONNECTED);
               this.updateGameInformations();
             }
             else {
-              this.state$.next(BLOCK_STATE.NO_METAMASK);
+              this._state$.next(BLOCK_STATE.NO_METAMASK);
             }
           }
           else {
-            this.state$.next(BLOCK_STATE.NO_METAMASK);
+            this._state$.next(BLOCK_STATE.NO_METAMASK);
           }
         },
           (error: any) => {
             console.log("error getting singer from metamask: " + error);
-            this.state$.next(BLOCK_STATE.NO_METAMASK);
+            this._state$.next(BLOCK_STATE.NO_METAMASK);
           })
       }
       else {
         console.log("no signer");
-        this.state$.next(BLOCK_STATE.NO_METAMASK);
+        this._state$.next(BLOCK_STATE.NO_METAMASK);
       }
     }
     catch (e) {
       console.log("error getting singer from metamask: " + e);
-      this.state$.next(BLOCK_STATE.NO_METAMASK);
+      this._state$.next(BLOCK_STATE.NO_METAMASK);
     }
   }
 
@@ -227,19 +227,19 @@ export class BlockchainService {
     if (this.contract) {
       this.contract.gameCount().then((bigCount: BigNumber) => {
         let count: number = bigCount.toNumber();
-        this.gameCount$.next(count);
+        this._gameCount$.next(count);
         if (count > 0) {
           let promises: Promise<IGame>[] = [];
           for (let i = 0; i < count; i++) {
             promises.push(this.contract.games(BigNumber.from(i)))
           }
           Promise.all(promises).then(games => {
-            this.games$.next(games);
-            this.myGame$.next(games.find(game => {
-              return game.white === this.account$.value || game.black === this.account$.value;
+            this._games$.next(games);
+            this._myGame$.next(games.find(game => {
+              return game.white === this._account$.value || game.black === this._account$.value;
             }));
-            if (this.myGame$.getValue()) {
-              this.ownColor = this.myGame$.value?.white === this.account$.value ? COLOR.WHITE : COLOR.BLACK;
+            if (this._myGame$.getValue()) {
+              this._ownColor = this._myGame$.value?.white === this._account$.value ? COLOR.WHITE : COLOR.BLACK;
               this.updateMyPositions();
             }
             else {
@@ -249,31 +249,31 @@ export class BlockchainService {
             (error: any) => console.log("error getting games: " + error));
         }
         else {
-          this.myGame$.next(undefined);
+          this._myGame$.next(undefined);
         }
       }, (error: any) => console.log("error getting count: " + error));
     }
   }
 
   private updateMyPositions() {
-    if (this.myGame$.getValue()) {
-      this.contract.getPositions((this.myGame$.getValue() as IGame).index.add(1)).then((positions: COLOR[]) => {
-        this.positions$.next(positions);
+    if (this._myGame$.getValue()) {
+      this.contract.getPositions((this._myGame$.getValue() as IGame).index.add(1)).then((positions: COLOR[]) => {
+        this._positions$.next(positions);
         this._ref.tick();
       }, (error: any) => {
         console.log("error getting positiosn: " + error);
-        this.positions$.next([]);
+        this._positions$.next([]);
       });
     }
     else {
-      this.positions$.next([]);
+      this._positions$.next([]);
     }
   }
 
   async openGame() {
     let overrides: any = {
       value: ethers.utils.parseEther(this.connection.costInEth),
-      from: this.account$.value
+      from: this._account$.value
     };
     let gas: BigNumber = await this.contract.estimateGas.startGame(overrides);
     overrides.gasLimit = gas;
@@ -284,7 +284,7 @@ export class BlockchainService {
   async joinGame(game: IGame) {
     let overrides: any = {
       value: ethers.utils.parseEther(this.connection.costInEth),
-      from: this.account$.value,
+      from: this._account$.value,
       gasLimit: "10000000"
     };
     let gas: BigNumber = await this.contract.estimateGas.joinGame(game.white, overrides);
@@ -296,7 +296,7 @@ export class BlockchainService {
   makeMove(to: number, from: number = -1, remove: number = -1): Subject<any> {
     this.makeMoveListener = new Subject<any>();
     let overrides: any = {
-      from: this.account$.value
+      from: this._account$.value
     };
     this.contract.estimateGas.makeMove(to, from, remove, overrides).then((cost: BigNumber) => {
       overrides.gasLimit = cost;
@@ -318,4 +318,43 @@ export class BlockchainService {
     })
     return this.makeMoveListener;
   }
+
+  /**
+   * Data getters
+   */
+   get ownColor(): COLOR{
+     return this._ownColor;
+   }
+   get state$():Observable<BLOCK_STATE>
+   {
+     return this._state$ as Observable<BLOCK_STATE>;
+   }
+   get account$():Observable<string>
+   {
+     return this._account$ as Observable<string>;
+   }
+   get myGame$():Observable<IGame>
+   {
+     return this._myGame$ as Observable<IGame>;
+   }
+   get positions$():Observable<COLOR[]>
+   {
+     return this._positions$ as Observable<COLOR[]>;
+   }
+   get gameCount$():Observable<number>
+   {
+     return this._gameCount$ as Observable<number>;
+   }
+   get games$():Observable<IGame[]>
+   {
+     return this._games$ as Observable<IGame[]>;
+   }
+   get winnerList$():Observable<string[]>
+   {
+     return this._winnerList$ as Observable<string[]>;
+   }
+   get luckyPlayer$():Observable<string>
+   {
+     return this._luckyPlayer$ as Observable<string>;
+   }
 }

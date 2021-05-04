@@ -1,4 +1,6 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { combineLatest, Subject } from 'rxjs';
+import { filter, takeUntil } from 'rxjs/operators';
 import { COLOR } from 'src/app/enums/color.enum';
 import { Coord } from 'src/app/models/coord';
 import { Game } from 'src/app/models/game';
@@ -11,7 +13,7 @@ import { GameHelper } from 'src/app/utils/game-helper';
   templateUrl: './table.component.html',
   styleUrls: ['./table.component.less']
 })
-export class TableComponent implements OnInit {
+export class TableComponent implements OnInit, OnDestroy {
   positions: COLOR[] = [];
   _COLOR: typeof COLOR = COLOR;
   fromIndexIndex: number = -1;
@@ -22,13 +24,20 @@ export class TableComponent implements OnInit {
   waitingForSecondPlayer: boolean = false;
   coordinates: Coord[] = [];
   private game: IGame = new Game();
+  private isDestroyed$:Subject<boolean> = new Subject<boolean>();
 
   constructor(public _blockchainService: BlockchainService) {
-    this.initPosList();
-    _blockchainService.positions$.subscribe(positions => this.refreshTable(positions))
   }
 
   ngOnInit(): void {
+    this.initPosList();
+    combineLatest([this._blockchainService.positions$,this. _blockchainService.myGame$]).pipe(
+      takeUntil(this.isDestroyed$),
+      filter(([positions, myGame]) => myGame !== undefined)
+    ).subscribe(([positions, myGame]) => this.refreshTable(positions, myGame));
+  }
+
+  ngOnDestroy(): void {
   }
 
   private initPosList() {
@@ -44,12 +53,11 @@ export class TableComponent implements OnInit {
     }
   }
 
-  private refreshTable(positions: COLOR[]): void {
+  private refreshTable(positions: COLOR[], myGame:IGame): void {
     this.positions = positions;
     this.fromIndexIndex = -1;
     this.toIndex = -1;
-    this.game = this._blockchainService.myGame$.value as IGame;
-    if( this.game)
+    if(myGame)
     {
       this.isTurn = (this._blockchainService.ownColor == COLOR.WHITE) == (this.game.round.toNumber() % 2 == 0)
       this.waitingForSecondPlayer = GameHelper.isEmptyAdress(this.game.black);
